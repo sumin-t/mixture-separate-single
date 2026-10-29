@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>혼합물 분리 가상 실험실 | 수민T의 과학 실험실</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 </head>
 <body data-tab="a">
 <div class="top">
@@ -115,7 +115,6 @@
       </ol>
       <p class="hint">점이 적거나 한쪽에만 있으면 AI가 틀리기 쉬워요. 점을 더 모으면 곡선이 어떻게 달라지는지 보세요!</p>
     </div>
-    <label>곡선이 구불구불할 수 있는 정도 <b id="ai-degv">2</b> <small>(1 = 직선, 숫자가 클수록 많이 휘어요)</small><input type="range" id="ai-deg" min="1" max="5" step="1" value="2"></label>
     <label class="inline"><input type="checkbox" id="ai-truth"> 교과서 용해도 곡선(정답) 겹쳐 보기</label>
     <canvas id="ai-canvas" width="640" height="340" class="gcanvas" aria-label="용해도 곡선 학습"></canvas>
     <div id="ai-reg" class="msg"></div>
@@ -127,7 +126,7 @@
     <h3>4) 생각해 보기</h3>
     <ul class="q">
       <li>데이터가 적을 때와 많을 때 AI의 예측은 어떻게 달랐나요? 왜 그럴까요?</li>
-      <li>곡선을 너무 구불구불하게 하면 학습한 점에는 잘 맞지만 학습하지 않은 온도에서는 어떻게 되었나요?</li>
+      <li>점이 한쪽 온도에만 몰려 있을 때, 기록하지 않은 온도에서 AI의 예측은 어떻게 되었나요?</li>
       <li>황산 구리(Ⅱ)를 아주 많이 넣었을 때, 질산 칼륨만 분리할 수 있을까요?</li>
     </ul>
   </div>
@@ -300,7 +299,7 @@
 
 <footer class="foot">중학교 2학년 과학 · 혼합물의 분리 (Ⅰ. 물질의 특성)<br>©수민T의 과학 실험실. All rights reserved.</footer>
 
-<script src="core.js?v=6"></script>
-<script src="app.js?v=6"></script>
+<script src="core.js?v=7"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>
