@@ -23,7 +23,6 @@
   function showTab(name) {
     document.querySelectorAll('.tab').forEach(function (b) { b.classList.toggle('on', b.dataset.tab === name); });
     document.querySelectorAll('.panel').forEach(function (p) { p.classList.toggle('on', p.id === 'tab-' + name); });
-    if (name === 'ai') renderAI();
     if (name === 'c') drawGraphC();
   }
   document.querySelectorAll('.tab').forEach(function (b) { b.addEventListener('click', function () { showTab(b.dataset.tab); }); });
@@ -157,7 +156,7 @@
   $('a-record').addEventListener('click', function () {
     const r = aCalc();
     addLog({ exp: 'A', inK: r.inK, inCu: r.inCu, T: r.T, sK: +f1(r.sK), sCu: +f1(r.sCu), precK: +f1(r.precK), precCu: +f1(r.precCu) });
-    $('a-msg').className = 'msg ok'; $('a-msg').innerHTML = '📋 기록했어요! (' + r.T + ' ℃ 데이터) 온도를 바꿔 가며 여러 번 기록하면 AI가 예측하고, ④ AI 분석실에서 곡선을 학습해요.';
+    $('a-msg').className = 'msg ok'; $('a-msg').innerHTML = '📋 기록했어요! (' + r.T + ' ℃ 데이터) 온도를 바꿔 가며 여러 번 기록하면 AI가 예측하고, 아래 AI 분석에서 곡선을 학습해요.';
     aAI(r, aVals());
   });
 
@@ -257,7 +256,7 @@
   });
   $('b-record').addEventListener('click', function () {
     addLog({ exp: 'B', T: +$('b-T').value, tubeT: +$('b-tubeT').value, melted: B.melted ? 1 : 0, film: B.film ? 1 : 0 });
-    bMsg('📋 기록했어요! 물 온도를 바꿔 가며 더 기록하면 AI가 결과를 예측하고, ④ AI 분석실에서 녹는 온도의 경계를 학습해요.', 'ok');
+    bMsg('📋 기록했어요! 물 온도를 바꿔 가며 더 기록하면 AI가 결과를 예측하고, 아래 AI 분석에서 녹는 온도의 경계를 학습해요.', 'ok');
     bAI();
   });
   $('b-tube').style.transform = 'translateY(-130px)';
@@ -404,16 +403,12 @@
   });
 
   /* =========================================================
-     ④ AI 분석실
+     AI 분석 (각 활동 하단)
      ========================================================= */
   function rowsOf(exp) { return LOG.filter(function (r) { return r.exp === exp; }); }
-  function renderAI() {
-    if (!$('tab-ai')) return;
-    $('ai-count').textContent = '(모두 ' + LOG.length + '개)';
-    renderTable(); renderReg(); renderCls();
-  }
-  function renderTable() {
-    const flt = $('ai-filter').value; let rows = LOG.filter(function (r) { return flt === 'all' || r.exp === flt; });
+  function renderAI() { ['A', 'B', 'C'].forEach(renderTable); renderReg(); renderCls(); }
+  function renderTable(flt) {
+    const rows = rowsOf(flt);
     let h = '<table>';
     if (flt === 'A') {
       h += '<tr><th>#</th><th>온도(℃)</th><th>질산 칼륨<br>넣은 양</th><th>황산 구리<br>넣은 양</th><th>용해도<br>질산 칼륨</th><th>용해도<br>황산 구리</th><th>석출량<br>질산 칼륨</th><th>석출량<br>황산 구리</th><th></th></tr>';
@@ -435,16 +430,17 @@
       });
     }
     h += '</table>';
-    $('ai-table').innerHTML = rows.length ? h : '<p class="hint">아직 기록된 데이터가 없어요. ①②③ 탭에서 실험하고 [기록]을 눌러 보세요.</p>';
+    $('ai-table-' + flt).innerHTML = rows.length ? h : '<p class="hint">아직 기록된 데이터가 없어요. 위 실험에서 [기록]을 눌러 보세요.</p>';
   }
-  $('ai-filter').addEventListener('change', renderTable);
-  $('ai-table').addEventListener('click', function (e) { const d = e.target.getAttribute('data-del'); if (d) { LOG = LOG.filter(function (r) { return String(r.id) !== d; }); saveLog(); renderAI(); } });
-  $('ai-clear').addEventListener('click', function () { if (window.confirm('기록한 데이터를 모두 지울까요?')) { LOG = []; saveLog(); renderAI(); } });
-  $('ai-csv').addEventListener('click', function () {
-    const cols = ['exp', 'T', 'inK', 'inCu', 'sK', 'sCu', 'precK', 'precCu', 'tubeT', 'melted', 'film', 'tube', 'E', 'W', 'vol', 'eth', 'avgT'];
-    let s = '﻿' + cols.join(',') + '\n';
-    LOG.forEach(function (r) { s += cols.map(function (c) { return r[c] == null ? '' : r[c]; }).join(',') + '\n'; });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([s], { type: 'text/csv;charset=utf-8' })); a.download = '혼합물분리_실험데이터.csv'; a.click();
+  ['A', 'B', 'C'].forEach(function (exp) {
+    $('ai-table-' + exp).addEventListener('click', function (e) { const d = e.target.getAttribute('data-del'); if (d) { LOG = LOG.filter(function (r) { return String(r.id) !== d; }); saveLog(); renderAI(); } });
+    $('ai-clear-' + exp).addEventListener('click', function () { if (window.confirm('이 실험의 기록을 모두 지울까요?')) { LOG = LOG.filter(function (r) { return r.exp !== exp; }); saveLog(); renderAI(); } });
+    $('ai-csv-' + exp).addEventListener('click', function () {
+      const cols = ['exp', 'T', 'inK', 'inCu', 'sK', 'sCu', 'precK', 'precCu', 'tubeT', 'melted', 'film', 'tube', 'E', 'W', 'vol', 'eth', 'avgT'];
+      let s = '\ufeff' + cols.join(',') + '\n';
+      rowsOf(exp).forEach(function (r) { s += cols.map(function (c) { return r[c] == null ? '' : r[c]; }).join(',') + '\n'; });
+      const l = document.createElement('a'); l.href = URL.createObjectURL(new Blob([s], { type: 'text/csv;charset=utf-8' })); l.download = '혼합물분리_' + exp + '_실험데이터.csv'; l.click();
+    });
   });
 
   /* ---- 회귀 ---- */
@@ -465,7 +461,7 @@
     const a = axes(ctx, cv.width, cv.height, 48, cv.width - 14, 14, cv.height - 36, 0, 60, 0, 120, '온도(℃)', '용해도(g/물 100 g)');
     if ($('ai-truth').checked) { ctx.strokeStyle = '#2e7d32'; ctx.setLineDash([6, 4]); ctx.lineWidth = 2; ctx.beginPath(); for (let T = 0; T <= 60; T += 1) { if (T) ctx.lineTo(a.X(T), a.Y(C.S_K(T))); else ctx.moveTo(a.X(T), a.Y(C.S_K(T))); } ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = '#2e7d32'; ctx.fillText('교과서 곡선(정답)', a.X(30), a.Y(110)); }
     const msg = $('ai-reg'); curFit = null;
-    if (rows.length < 2) { msg.className = 'msg'; msg.innerHTML = '① 탭에서 여러 온도로 [기록]해 보세요. 데이터가 <b>2개 이상</b>이면 AI가 곡선을 학습할 수 있어요. (지금 ' + rows.length + '개)'; rows.forEach(function (r) { drawPt(ctx, a, r.T, r.sK); }); return; }
+    if (rows.length < 2) { msg.className = 'msg'; msg.innerHTML = '위 실험에서 여러 온도로 [기록]해 보세요. 데이터가 <b>2개 이상</b>이면 AI가 곡선을 학습할 수 있어요. (지금 ' + rows.length + '개)'; rows.forEach(function (r) { drawPt(ctx, a, r.T, r.sK); }); return; }
     const xs = rows.map(function (r) { return r.T; }), ys = rows.map(function (r) { return r.sK; });
     const want = +$('ai-deg').value, fit = C.polyfit(xs, ys, want); curFit = fit;
     ctx.strokeStyle = '#1565c0'; ctx.lineWidth = 2.5; ctx.beginPath();
@@ -505,7 +501,7 @@
     if (bd && bd.separable) { ctx.strokeStyle = '#1565c0'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(X(bd.boundary), 8); ctx.lineTo(X(bd.boundary), 90); ctx.stroke(); ctx.lineWidth = 1; }
     rows.forEach(function (r) { ctx.fillStyle = r.melted ? '#ff8f00' : '#9aa5b1'; ctx.strokeStyle = '#345'; ctx.beginPath(); ctx.arc(X(r.T), r.melted ? 68 : 32, 6, 0, 6.283); ctx.fill(); ctx.stroke(); });
     const m = $('ai-cls');
-    if (!rows.length) { m.className = 'msg'; m.innerHTML = '③ 탭에서 물 온도를 바꿔 가며 [기록]해 보세요. <b>녹은 경우와 녹지 않은 경우가 모두</b> 있어야 AI가 경계를 학습할 수 있어요.'; return; }
+    if (!rows.length) { m.className = 'msg'; m.innerHTML = '위 실험에서 물 온도를 바꿔 가며 [기록]해 보세요. <b>녹은 경우와 녹지 않은 경우가 모두</b> 있어야 AI가 경계를 학습할 수 있어요.'; return; }
     if (!bd) { m.className = 'msg'; m.innerHTML = '지금은 한쪽 결과만 있어요(' + rows.length + '개). 다른 쪽 온도에서도 실험해 보세요.'; return; }
     if (!bd.separable) { m.className = 'msg warn'; m.innerHTML = '녹지 않은 온도(' + bd.hiSolid + ' ℃)가 녹은 온도(' + bd.loLiquid + ' ℃)보다 높거나 같은 기록이 있어요. 기록이 잘못되었는지 확인해 보세요(데이터 정제).'; return; }
     m.className = 'msg'; m.innerHTML = 'AI가 학습한 경계: <b>약 ' + f1(bd.boundary) + ' ℃</b> (녹지 않은 가장 높은 온도 ' + bd.hiSolid + ' ℃ ~ 녹은 가장 낮은 온도 ' + bd.loLiquid + ' ℃ 사이). 노란 구간이 좁을수록 AI가 더 확신해요. 교과서의 녹는점(약 69 ℃)과 비교해 보세요. 데이터를 더 모으면 구간이 어떻게 달라지나요?';
@@ -529,15 +525,15 @@
   ];
   const CASES = [
     { name: '질산 칼륨 + 황산 구리(Ⅱ)', kind: 'ss', dissolve: true, slope: 0.9, info: '둘 다 물에 녹는 고체. 0~40 ℃에서 용해도 변화: 질산 칼륨 약 1.3 g/℃, 황산 구리(Ⅱ) 약 0.35 g/℃',
-      tb: '용해도 차(재결정) — 교과서 34~35쪽', verify: '황산 구리(Ⅱ)의 양을 아주 많이 넣으면 어떻게 될까요? ① 탭에서 확인해 보세요.' },
+      tb: '용해도 차(재결정) — 교과서 34~35쪽', verify: '황산 구리(Ⅱ)의 양을 아주 많이 넣으면 어떻게 될까요? 위 실험에서 확인해 보세요.' },
     { name: '질산 칼륨 + 염화 나트륨', kind: 'ss', dissolve: true, slope: 1.25, info: '둘 다 물에 녹는 고체. 염화 나트륨은 온도에 따른 용해도 변화가 매우 작음(교과서 그림 15)',
       tb: '용해도 차(재결정) — 교과서 35쪽 그림 15', verify: '염화 나트륨은 냉각해도 석출되지 않는 까닭을 용해도 곡선으로 설명해 보세요.' },
     { name: '물 + 에탄올', kind: 'll', miscible: true, bp: 22, info: '두 액체는 서로 잘 섞임. 끓는점: 물 100 ℃, 에탄올 약 78 ℃(차이 약 22 ℃)',
-      tb: '끓는점 차(증류) — 교과서 36~37쪽', verify: '② 탭에서 증류한 시험관 1번의 에탄올은 몇 %였나요? AI의 추천만으로 "순수한 에탄올을 얻는다"고 말할 수 있을까요? (교과서 37쪽 오개념 바로잡기)' },
+      tb: '끓는점 차(증류) — 교과서 36~37쪽', verify: '위 증류 실험에서 시험관 1번의 에탄올은 몇 %였나요? AI의 추천만으로 "순수한 에탄올을 얻는다"고 말할 수 있을까요? (교과서 37쪽 오개념 바로잡기)' },
     { name: '물 + 식용유', kind: 'll', miscible: false, dens: 0.08, info: '두 액체는 서로 섞이지 않음. 밀도: 물 1.0 g/mL, 식용유 약 0.92 g/mL',
       tb: '밀도 차(분별 깔때기) — 교과서 32~33쪽', verify: '분별 깔때기에서 먼저 나오는 액체는 어느 쪽일까요?' },
     { name: '스테아르산 + 물', kind: 'sl', immiscible: true, mpLow: true, info: '스테아르산(고체, 녹는점 약 69 ℃)은 물에 거의 녹지 않음. 물의 끓는점 100 ℃',
-      tb: '녹는점 차 — 교과서 38쪽', verify: '③ 탭에서 시험관이 뜨거울 때(80 ℃)는 어떻게 되었나요? AI의 추천에 필요한 조건은 무엇일까요?' },
+      tb: '녹는점 차 — 교과서 38쪽', verify: '위 실험에서 시험관이 뜨거울 때(80 ℃)는 어떻게 되었나요? AI의 추천에 필요한 조건은 무엇일까요?' },
     { name: '쭉정이 + 좋은 볍씨', kind: 'ss', dissolve: false, dens: 0.1, info: '물에 녹지 않는 고체 두 가지. 쭉정이 < 소금물 < 좋은 볍씨 (밀도)',
       tb: '밀도 차(소금물에 넣기) — 교과서 32쪽', verify: '이때 소금물의 밀도는 두 고체의 밀도와 어떤 관계여야 할까요?' },
     { name: '모래 + 소금', kind: 'ss', dissolve: 'one', info: '모래는 물에 녹지 않고, 소금은 물에 녹음',
@@ -552,16 +548,17 @@
     return { m: '추천할 수 없음', why: '어떤 규칙에도 해당하지 않아요. (한 성분만 물에 녹는 경우는 규칙에 없어요.)' };
   }
   (function buildRules() {
-    $('ai-rules').innerHTML = RULES.map(function (r) { return '<li>' + r + '</li>'; }).join('');
-    let h = '';
+    document.querySelectorAll('.ai-rules').forEach(function (o) { o.innerHTML = RULES.map(function (r) { return '<li>' + r + '</li>'; }).join(''); });
+    const TAB = ['A', 'A', 'C', 'B', 'B', 'B', 'A'], htm = { A: '', B: '', C: '' }, cnt = { A: 0, B: 0, C: 0 };
     CASES.forEach(function (c, i) {
-      h += '<div class="case" id="case' + i + '"><h3>사례 ' + (i + 1) + '. ' + c.name + '</h3><div class="why">' + c.info + '</div>' +
+      const t = TAB[i]; cnt[t]++;
+      htm[t] += '<div class="case" id="case' + i + '"><h3>사례 ' + cnt[t] + '. ' + c.name + '</h3><div class="why">' + c.info + '</div>' +
         '<button class="btn small" data-rec="' + i + '">🤖 AI에게 추천받기</button><div class="out"></div></div>';
     });
-    $('ai-cases').innerHTML = h;
+    ['A', 'B', 'C'].forEach(function (t) { $('ai-cases-' + t).innerHTML = htm[t]; $('ai-cases-' + t).addEventListener('click', caseClick); });
   })();
-  $('ai-cases').addEventListener('click', function (e) {
-    const t = e.target, r = t.getAttribute('data-rec'), v = t.getAttribute('data-ver'), g = t.getAttribute('data-go');
+  function caseClick(e) {
+    const t = e.target, r = t.getAttribute('data-rec'), v = t.getAttribute('data-ver');
     if (r !== null) {
       const c = CASES[+r], a = recommend(c), box = document.querySelector('#case' + r + ' .out');
       box.innerHTML = '<div class="ai"><b>AI 추천:</b> ' + a.m + '<br><span class="why">근거 — ' + a.why + '</span></div>' +
@@ -571,10 +568,9 @@
     }
     if (v !== null) {
       const c = CASES[+v], box = document.querySelector('#case' + v + ' .vbox');
-      box.innerHTML = '<div class="msg ok"><b>교과서 확인:</b> ' + c.tb + '<br><b>생각해 보기:</b> ' + c.verify + (c.kind === 'll' && c.miscible ? ' <button class="btn small ghost" data-go="c">② 탭으로 가기</button>' : '') + '</div>';
+      box.innerHTML = '<div class="msg ok"><b>교과서 확인:</b> ' + c.tb + '<br><b>생각해 보기:</b> ' + c.verify + '' + '</div>';
     }
-    if (g) showTab(g);
-  });
+  }
 
   /* ---------- 시작 ---------- */
   aReset(false); aRender(); cInfo(); cRender(true); renderAI();

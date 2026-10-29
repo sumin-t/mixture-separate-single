@@ -68,3 +68,6 @@ th{background:#eef4fb}
 .bub{animation:rise 1.1s linear infinite}
 
 .msg.ai{background:#eef4ff;border:1px solid #c9dcf7;color:#173a6b}
+.ai-card h3{margin:16px 0 4px;font-size:1rem;color:#0d47a1}
+.ai-card h3 small{font-weight:400;color:var(--mute);font-size:.8rem}
+.ai-card{border-color:#b8d4f5;background:#fbfdff}
