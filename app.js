@@ -30,6 +30,7 @@
   function showTab(name) {
     document.querySelectorAll('.tab').forEach(function (b) { b.classList.toggle('on', b.dataset.tab === name); });
     document.querySelectorAll('.panel').forEach(function (p) { p.classList.toggle('on', p.id === 'tab-' + name); });
+    document.body.setAttribute('data-tab', name);
     if (name === 'c') drawGraphC();
   }
   document.querySelectorAll('.tab').forEach(function (b) { b.addEventListener('click', function () { showTab(b.dataset.tab); }); });
