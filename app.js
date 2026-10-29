@@ -415,8 +415,8 @@
      ========================================================= */
   function rowsOf(exp) { return LOG.filter(function (r) { return r.exp === exp; }); }
   function renderMini() {
-    const cv = $('a-mini'), rows = rowsOf('A'), ctx = hd(cv, 560, 240);
-    const a = axes(ctx, 560, 240, 48, 546, 14, 204, 0, 60, 0, 120, '온도(℃)', '용해도(g/물 100 g)');
+    const cv = $('a-mini'), rows = rowsOf('A'), ctx = hd(cv, 640, 300);
+    const a = axes(ctx, 640, 300, 66, 622, 16, 254, 0, 60, 0, 120, '온도(℃)', '용해도(g/물 100 g)');
     rows.forEach(function (r, i) { drawPt(ctx, a, r.T, r.sK); });
     if (rows.length) { const l = rows[rows.length - 1]; ctx.strokeStyle = '#ef6c00'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(a.X(l.T), a.Y(l.sK), 10, 0, 6.283); ctx.stroke(); }
     $('a-minimsg').textContent = rows.length ? '기록한 점 ' + rows.length + '개 (주황 동그라미 = 방금 기록한 점). 점이 2개 이상이면 아래 AI 분석에서 AI가 곡선을 그려요.' : '기록하면 여기에 점이 찍혀요. (가로: 온도, 세로: 질산 칼륨이 물 100 g에 녹을 수 있는 양)';
@@ -454,20 +454,27 @@
 
   /* ---- 회귀 ---- */
   function axes(ctx, W, H, L, R, Tp, Bt, xmin, xmax, ymin, ymax, xl, yl) {
-    ctx.clearRect(0, 0, W, H); ctx.strokeStyle = '#e1e8f0'; ctx.fillStyle = '#456'; ctx.font = '12px sans-serif'; ctx.lineWidth = 1;
+    ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
     const X = function (x) { return L + (R - L) * (x - xmin) / (xmax - xmin); }, Y = function (y) { return Bt - (Bt - Tp) * (y - ymin) / (ymax - ymin); };
-    for (let x = xmin; x <= xmax; x += 10) { ctx.beginPath(); ctx.moveTo(X(x), Tp); ctx.lineTo(X(x), Bt); ctx.stroke(); ctx.fillText(x, X(x) - 6, Bt + 15); }
+    ctx.font = '13px "IBM Plex Sans KR","Noto Sans KR",sans-serif'; ctx.lineWidth = 1;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (let x = xmin; x <= xmax; x += 10) { ctx.strokeStyle = '#D3DCE1'; ctx.beginPath(); ctx.moveTo(X(x), Tp); ctx.lineTo(X(x), Bt); ctx.stroke(); ctx.fillStyle = '#13232C'; ctx.fillText(x, X(x), Bt + 6); }
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
     const ys = (ymax - ymin) / 6;
-    for (let y = ymin; y <= ymax + 0.1; y += ys) { ctx.beginPath(); ctx.moveTo(L, Y(y)); ctx.lineTo(R, Y(y)); ctx.stroke(); ctx.fillText(Math.round(y), 14, Y(y) + 4); }
-    ctx.fillText(xl, (L + R) / 2 - 30, H - 4); ctx.save(); ctx.translate(10, Tp + 60); ctx.rotate(-Math.PI / 2); ctx.fillText(yl, 0, 0); ctx.restore();
+    for (let y = ymin; y <= ymax + 0.1; y += ys) { ctx.strokeStyle = '#D3DCE1'; ctx.beginPath(); ctx.moveTo(L, Y(y)); ctx.lineTo(R, Y(y)); ctx.stroke(); ctx.fillStyle = '#13232C'; ctx.fillText(Math.round(y), L - 8, Y(y)); }
+    ctx.strokeStyle = '#13232C'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(L, Tp); ctx.lineTo(L, Bt); ctx.lineTo(R, Bt); ctx.stroke();
+    ctx.fillStyle = '#13232C'; ctx.font = '600 14px "IBM Plex Sans KR","Noto Sans KR",sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillText(xl, (L + R) / 2, H - 6);
+    ctx.save(); ctx.translate(16, (Tp + Bt) / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(yl, 0, 0); ctx.restore();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     return { X: X, Y: Y };
   }
   $('ai-deg').addEventListener('input', renderReg); $('ai-truth').addEventListener('change', renderReg);
   let curFit = null;
   function renderReg() {
-    const rows = rowsOf('A'), cv = $('ai-canvas'), CW = 560, CH = 300, ctx = hd(cv, CW, CH);
+    const rows = rowsOf('A'), cv = $('ai-canvas'), CW = 640, CH = 340, ctx = hd(cv, CW, CH);
     $('ai-degv').textContent = $('ai-deg').value;
-    const a = axes(ctx, CW, CH, 48, CW - 14, 14, CH - 36, 0, 60, 0, 120, '온도(℃)', '용해도(g/물 100 g)');
+    const a = axes(ctx, CW, CH, 66, CW - 18, 16, CH - 46, 0, 60, 0, 120, '온도(℃)', '용해도(g/물 100 g)');
     if ($('ai-truth').checked) { ctx.strokeStyle = '#2e7d32'; ctx.setLineDash([6, 4]); ctx.lineWidth = 2; ctx.beginPath(); for (let T = 0; T <= 60; T += 1) { if (T) ctx.lineTo(a.X(T), a.Y(C.S_K(T))); else ctx.moveTo(a.X(T), a.Y(C.S_K(T))); } ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = '#2e7d32'; ctx.fillText('교과서 곡선(정답)', a.X(30), a.Y(110)); }
     const msg = $('ai-reg'); curFit = null;
     if (rows.length < 2) { msg.className = 'msg'; msg.innerHTML = '위 실험에서 여러 온도로 [기록]해 보세요. 데이터가 <b>2개 이상</b>이면 AI가 곡선을 학습할 수 있어요. (지금 ' + rows.length + '개)'; rows.forEach(function (r) { drawPt(ctx, a, r.T, r.sK); }); return; }
@@ -497,18 +504,21 @@
   /* ---- 분류 ---- */
   let curBd = null;
   function renderCls() {
-    const rows = rowsOf('B'), cv = $('ai-canvas2'), W = 560, H = 120, ctx = hd(cv, W, H);
-    ctx.clearRect(0, 0, W, H); const L = 40, R = W - 14, xmin = 20, xmax = 95;
+    const rows = rowsOf('B'), cv = $('ai-canvas2'), W = 640, H = 190, ctx = hd(cv, W, H);
+    ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+    const L = 96, R = W - 20, xmin = 20, xmax = 95, T0 = 22, B0 = 130, FONT = '"IBM Plex Sans KR","Noto Sans KR",sans-serif';
     const X = function (x) { return L + (R - L) * (x - xmin) / (xmax - xmin); };
-    ctx.fillStyle = '#456'; ctx.font = '12px sans-serif'; ctx.strokeStyle = '#e1e8f0';
-    for (let x = 20; x <= 95; x += 10) { ctx.beginPath(); ctx.moveTo(X(x), 10); ctx.lineTo(X(x), 88); ctx.stroke(); ctx.fillText(x, X(x) - 6, 104); }
-    ctx.fillText('물의 온도(℃)', W / 2 - 30, 118); ctx.fillText('녹지 않음', 2, 36); ctx.fillText('녹음', 2, 72);
+    ctx.font = '13px ' + FONT; ctx.lineWidth = 1; ctx.strokeStyle = '#D3DCE1'; ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'center'; ctx.fillStyle = '#13232C';
+    for (let x = 20; x <= 95; x += 10) { ctx.beginPath(); ctx.moveTo(X(x), T0); ctx.lineTo(X(x), B0); ctx.stroke(); ctx.fillText(x, X(x), B0 + 20); }
+    ctx.font = '600 14px ' + FONT; ctx.fillText('물의 온도(℃)', (L + R) / 2, H - 8);
+    ctx.textAlign = 'right'; ctx.fillText('녹지 않음', L - 10, 56); ctx.fillText('녹음', L - 10, 112); ctx.textAlign = 'left'; ctx.font = '13px ' + FONT;
     const bd = C.learnBoundary(rows.map(function (r) { return { T: r.T, melted: r.melted }; })); curBd = bd;
-    if (bd && bd.separable) { ctx.fillStyle = 'rgba(255,193,7,.25)'; ctx.fillRect(X(bd.hiSolid), 10, X(bd.loLiquid) - X(bd.hiSolid), 78); }
-    ctx.setLineDash([5, 4]); ctx.strokeStyle = '#2e7d32'; ctx.beginPath(); ctx.moveTo(X(C.STEARIC_MP), 8); ctx.lineTo(X(C.STEARIC_MP), 90); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = '#2e7d32'; ctx.fillText('교과서 약 69 ℃', X(C.STEARIC_MP) + 4, 20);
-    if (bd && bd.separable) { ctx.strokeStyle = '#1565c0'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(X(bd.boundary), 8); ctx.lineTo(X(bd.boundary), 90); ctx.stroke(); ctx.lineWidth = 1; }
-    rows.forEach(function (r) { ctx.fillStyle = r.melted ? '#ff8f00' : '#9aa5b1'; ctx.strokeStyle = '#345'; ctx.beginPath(); ctx.arc(X(r.T), r.melted ? 68 : 32, 6, 0, 6.283); ctx.fill(); ctx.stroke(); });
+    if (bd && bd.separable) { ctx.fillStyle = 'rgba(255,193,7,.25)'; ctx.fillRect(X(bd.hiSolid), T0, X(bd.loLiquid) - X(bd.hiSolid), B0 - T0); }
+    ctx.setLineDash([5, 4]); ctx.strokeStyle = '#2e7d32'; ctx.beginPath(); ctx.moveTo(X(C.STEARIC_MP), T0 - 6); ctx.lineTo(X(C.STEARIC_MP), B0); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#2e7d32'; ctx.fillText('교과서 약 69 ℃', X(C.STEARIC_MP) + 6, T0 + 4);
+    if (bd && bd.separable) { ctx.strokeStyle = '#1565c0'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(X(bd.boundary), T0 - 6); ctx.lineTo(X(bd.boundary), B0); ctx.stroke(); ctx.lineWidth = 1; }
+    rows.forEach(function (r) { ctx.fillStyle = r.melted ? '#ff8f00' : '#9aa5b1'; ctx.strokeStyle = '#345'; ctx.beginPath(); ctx.arc(X(r.T), r.melted ? 108 : 52, 7, 0, 6.283); ctx.fill(); ctx.stroke(); });
     const m = $('ai-cls');
     if (!rows.length) { m.className = 'msg'; m.innerHTML = '위 실험에서 물 온도를 바꿔 가며 [기록]해 보세요. <b>녹은 경우와 녹지 않은 경우가 모두</b> 있어야 AI가 경계를 학습할 수 있어요.'; return; }
     if (!bd) { m.className = 'msg'; m.innerHTML = '지금은 한쪽 결과만 있어요(' + rows.length + '개). 다른 쪽 온도에서도 실험해 보세요.'; return; }

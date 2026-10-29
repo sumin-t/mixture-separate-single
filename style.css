@@ -113,9 +113,8 @@ th{background:var(--surface2)}
   .scene{max-height:340px;width:100%;margin:0 auto}
   #c-svg.scene{max-height:300px}
 }
-@media (min-width:901px) and (max-width:1366px) and (orientation:landscape){
-  .gcanvas{max-height:360px}
-}
 /* 장치 그림이 화면을 다 차지하지 않도록 */
 .scene{max-height:380px;margin:0 auto}
 #c-svg.scene{max-height:360px}
+.gcanvas{max-width:760px;margin-left:auto;margin-right:auto}
+#c-graph.gcanvas{max-width:none}
