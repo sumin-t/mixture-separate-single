@@ -112,3 +112,4 @@ svg{max-width:100%;height:auto}
   .scene{max-height:340px;width:100%;margin:0 auto;display:block}
   #c-svg.scene{max-height:300px}
 }
+.explain{background:#f1f7ff;border:1px solid #c9dcf7;border-radius:12px;padding:12px 14px;margin:6px 0 10px}.explain p{margin:4px 0}.explain ol{margin:6px 0 6px 20px;padding:0}.minih{margin:14px 0 4px;font-size:1rem;color:#0d47a1}.minih small{font-weight:400;color:var(--mute)}

@@ -19,6 +19,13 @@
   function saveLog() { try { localStorage.setItem(KEY, JSON.stringify(LOG)); } catch (e) { /* 저장 불가 환경에서도 동작 */ } }
   function addLog(rec) { rec.id = Date.now() + Math.random(); LOG.push(rec); saveLog(); renderAI(); }
 
+  /* ---------- 고해상도 캔버스 ---------- */
+  function hd(cv, w, h) {
+    const S = Math.max(2, Math.min(3, window.devicePixelRatio || 1));
+    if (cv.width !== w * S) { cv.width = w * S; cv.height = h * S; }
+    const ctx = cv.getContext('2d'); ctx.setTransform(S, 0, 0, S, 0, 0); return ctx;
+  }
+
   /* ---------- 탭 ---------- */
   function showTab(name) {
     document.querySelectorAll('.tab').forEach(function (b) { b.classList.toggle('on', b.dataset.tab === name); });
@@ -163,7 +170,7 @@
   /* ---- 입자 모형 애니메이션 ---- */
   function drawParticles() {
     const cv = $('a-canvas'); if (!cv || !$('tab-a').classList.contains('on')) return;
-    const ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
+    const W = 420, H = 260, ctx = hd(cv, W, H);
     ctx.clearRect(0, 0, W, H);
     if (!$('a-pm').checked) { ctx.fillStyle = '#789'; ctx.font = '14px sans-serif'; ctx.fillText('입자 모형 보기를 켜 보세요', 130, 130); return; }
     const v = aVals(), r = aCalc();
@@ -373,7 +380,7 @@
   });
 
   function drawGraphC() {
-    const cv = $('c-graph'); if (!cv) return; const ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
+    const cv = $('c-graph'); if (!cv) return; const W = 520, H = 280, ctx = hd(cv, W, H);
     ctx.clearRect(0, 0, W, H);
     const L = 48, R = W - 12, Tp = 14, Bt = H - 38;
     const curve = D.still ? D.still.curve : [{ t: 0, T: 20 }];
@@ -406,7 +413,14 @@
      AI 분석 (각 활동 하단)
      ========================================================= */
   function rowsOf(exp) { return LOG.filter(function (r) { return r.exp === exp; }); }
-  function renderAI() { ['A', 'B', 'C'].forEach(renderTable); renderReg(); renderCls(); }
+  function renderMini() {
+    const cv = $('a-mini'), rows = rowsOf('A'), ctx = hd(cv, 560, 240);
+    const a = axes(ctx, 560, 240, 48, 546, 14, 204, 0, 60, 0, 120, '온도(℃)', '용해도(g/물 100 g)');
+    rows.forEach(function (r, i) { drawPt(ctx, a, r.T, r.sK); });
+    if (rows.length) { const l = rows[rows.length - 1]; ctx.strokeStyle = '#ef6c00'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(a.X(l.T), a.Y(l.sK), 10, 0, 6.283); ctx.stroke(); }
+    $('a-minimsg').textContent = rows.length ? '기록한 점 ' + rows.length + '개 (주황 동그라미 = 방금 기록한 점). 점이 2개 이상이면 아래 AI 분석에서 AI가 곡선을 그려요.' : '기록하면 여기에 점이 찍혀요. (가로: 온도, 세로: 질산 칼륨이 물 100 g에 녹을 수 있는 양)';
+  }
+  function renderAI() { renderMini(); ['A', 'B', 'C'].forEach(renderTable); renderReg(); renderCls(); }
   function renderTable(flt) {
     const rows = rowsOf(flt);
     let h = '<table>';
@@ -435,12 +449,6 @@
   ['A', 'B', 'C'].forEach(function (exp) {
     $('ai-table-' + exp).addEventListener('click', function (e) { const d = e.target.getAttribute('data-del'); if (d) { LOG = LOG.filter(function (r) { return String(r.id) !== d; }); saveLog(); renderAI(); } });
     $('ai-clear-' + exp).addEventListener('click', function () { if (window.confirm('이 실험의 기록을 모두 지울까요?')) { LOG = LOG.filter(function (r) { return r.exp !== exp; }); saveLog(); renderAI(); } });
-    $('ai-csv-' + exp).addEventListener('click', function () {
-      const cols = ['exp', 'T', 'inK', 'inCu', 'sK', 'sCu', 'precK', 'precCu', 'tubeT', 'melted', 'film', 'tube', 'E', 'W', 'vol', 'eth', 'avgT'];
-      let s = '\ufeff' + cols.join(',') + '\n';
-      rowsOf(exp).forEach(function (r) { s += cols.map(function (c) { return r[c] == null ? '' : r[c]; }).join(',') + '\n'; });
-      const l = document.createElement('a'); l.href = URL.createObjectURL(new Blob([s], { type: 'text/csv;charset=utf-8' })); l.download = '혼합물분리_' + exp + '_실험데이터.csv'; l.click();
-    });
   });
 
   /* ---- 회귀 ---- */
@@ -456,9 +464,9 @@
   $('ai-deg').addEventListener('input', renderReg); $('ai-truth').addEventListener('change', renderReg);
   let curFit = null;
   function renderReg() {
-    const rows = rowsOf('A'), cv = $('ai-canvas'), ctx = cv.getContext('2d');
+    const rows = rowsOf('A'), cv = $('ai-canvas'), CW = 560, CH = 300, ctx = hd(cv, CW, CH);
     $('ai-degv').textContent = $('ai-deg').value;
-    const a = axes(ctx, cv.width, cv.height, 48, cv.width - 14, 14, cv.height - 36, 0, 60, 0, 120, '온도(℃)', '용해도(g/물 100 g)');
+    const a = axes(ctx, CW, CH, 48, CW - 14, 14, CH - 36, 0, 60, 0, 120, '온도(℃)', '용해도(g/물 100 g)');
     if ($('ai-truth').checked) { ctx.strokeStyle = '#2e7d32'; ctx.setLineDash([6, 4]); ctx.lineWidth = 2; ctx.beginPath(); for (let T = 0; T <= 60; T += 1) { if (T) ctx.lineTo(a.X(T), a.Y(C.S_K(T))); else ctx.moveTo(a.X(T), a.Y(C.S_K(T))); } ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = '#2e7d32'; ctx.fillText('교과서 곡선(정답)', a.X(30), a.Y(110)); }
     const msg = $('ai-reg'); curFit = null;
     if (rows.length < 2) { msg.className = 'msg'; msg.innerHTML = '위 실험에서 여러 온도로 [기록]해 보세요. 데이터가 <b>2개 이상</b>이면 AI가 곡선을 학습할 수 있어요. (지금 ' + rows.length + '개)'; rows.forEach(function (r) { drawPt(ctx, a, r.T, r.sK); }); return; }
@@ -469,12 +477,12 @@
     rows.forEach(function (r) { drawPt(ctx, a, r.T, r.sK); });
     const grid = []; for (let T = 0; T <= 60; T++) grid.push(T);
     const err = C.rmse(fit, C.S_K, grid), uniq = {}; xs.forEach(function (x) { uniq[x] = 1; });
-    let s = '학습 데이터 <b>' + rows.length + '개</b>(서로 다른 온도 ' + Object.keys(uniq).length + '개, ' + Math.min.apply(null, xs) + '~' + Math.max.apply(null, xs) + ' ℃). 사용한 차수: <b>' + fit.degree + '</b>';
-    if (fit.degree < want) s += ' (데이터가 부족해 ' + want + '차 대신 ' + fit.degree + '차만 쓸 수 있어요)';
-    s += '<br>0~60 ℃ 전체에서 AI 곡선과 교과서 곡선의 평균 차이(RMSE): <b>' + f1(err) + ' g</b>';
+    let s = '학습 데이터 <b>' + rows.length + '개</b>(서로 다른 온도 ' + Object.keys(uniq).length + '개, ' + Math.min.apply(null, xs) + '~' + Math.max.apply(null, xs) + ' ℃). 곡선 구불구불 정도: <b>' + fit.degree + '</b>';
+    if (fit.degree < want) s += ' (점이 부족해서 ' + want + ' 대신 ' + fit.degree + '까지만 쓸 수 있어요)';
+    s += '<br>0~60 ℃ 전체에서 AI 곡선과 교과서 곡선의 평균 차이: <b>' + f1(err) + ' g</b>';
     const lo = Math.min.apply(null, xs), hi = Math.max.apply(null, xs);
     if (lo > 5 || hi < 55) s += '<br>⚠ 측정하지 않은 온도 범위(' + (lo > 5 ? '0~' + lo : '') + (hi < 55 ? ' ' + hi + '~60' : '') + ' ℃)는 AI가 <b>추측</b>한 값이라 틀리기 쉬워요.';
-    if (Object.keys(uniq).length <= fit.degree + 1 && fit.degree >= 3) s += '<br>⚠ 차수가 높고 데이터가 적으면 점은 정확히 지나지만 점 사이에서 곡선이 이상하게 휘어질 수 있어요.';
+    if (Object.keys(uniq).length <= fit.degree + 1 && fit.degree >= 3) s += '<br>⚠ 구불구불 정도가 크고 점이 적으면 점은 정확히 지나지만 점 사이에서 곡선이 이상하게 휘어질 수 있어요.';
     if (fit.degree === 1) s += '<br>직선은 너무 단순해서 휘어진 용해도 곡선을 잘 설명하지 못할 수 있어요.';
     msg.className = 'msg'; msg.innerHTML = s;
   }
@@ -488,7 +496,7 @@
   /* ---- 분류 ---- */
   let curBd = null;
   function renderCls() {
-    const rows = rowsOf('B'), cv = $('ai-canvas2'), ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
+    const rows = rowsOf('B'), cv = $('ai-canvas2'), W = 560, H = 120, ctx = hd(cv, W, H);
     ctx.clearRect(0, 0, W, H); const L = 40, R = W - 14, xmin = 20, xmax = 95;
     const X = function (x) { return L + (R - L) * (x - xmin) / (xmax - xmin); };
     ctx.fillStyle = '#456'; ctx.font = '12px sans-serif'; ctx.strokeStyle = '#e1e8f0';
