@@ -118,3 +118,9 @@ th{background:var(--surface2)}
 #c-svg.scene{max-height:360px}
 .gcanvas{max-width:760px;margin-left:auto;margin-right:auto}
 #c-graph.gcanvas{max-width:none}
+
+/* 내 정보(반·번호) */
+.me{padding:10px 14px;margin-top:12px}
+.me input{width:76px;min-height:44px;font-size:1.05rem;text-align:center;border:2px solid var(--line2);border-radius:10px;margin:0 4px 0 8px}
+.me .hint{display:inline-block;margin-left:8px}
+.me [hidden]{display:none}

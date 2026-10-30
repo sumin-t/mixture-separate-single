@@ -17,7 +17,56 @@
   let LOG = [];
   try { LOG = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { LOG = []; }
   function saveLog() { try { localStorage.setItem(KEY, JSON.stringify(LOG)); } catch (e) { /* 저장 불가 환경에서도 동작 */ } }
-  function addLog(rec) { rec.id = Date.now() + Math.random(); LOG.push(rec); saveLog(); renderAI(); }
+  function addLog(rec) { rec.id = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); LOG.push(rec); saveLog(); qPush({ op: 'add', rec: rec }); renderAI(); }
+  function delLog(ids) { ids = [].concat(ids); LOG = LOG.filter(function (r) { return ids.indexOf(String(r.id)) < 0; }); saveLog(); ids.forEach(function (id) { qPush({ op: 'del', id: String(id) }); }); renderAI(); }
+
+  /* ---------- 내 정보(반·번호)와 선생님께 보내기 ---------- */
+  const ME_KEY = 'sumin_mixlab_me_v1', Q_KEY = 'sumin_mixlab_q_v1';
+  const API = (window.MIXLAB_CONFIG && window.MIXLAB_CONFIG.API_URL) || '';
+  let ME = null, Q = [], flushing = false;
+  try { ME = JSON.parse(localStorage.getItem(ME_KEY) || 'null'); } catch (e) { ME = null; }
+  try { Q = JSON.parse(localStorage.getItem(Q_KEY) || '[]'); } catch (e) { Q = []; }
+  function saveQ() { try { localStorage.setItem(Q_KEY, JSON.stringify(Q)); } catch (e) { /* 무시 */ } }
+  function qPush(item) { if (!API) return; Q.push(item); saveQ(); flushQ(); }
+  function syncMsg() {
+    const m = $('me-sync'); if (!m) return;
+    if (!API) m.textContent = '(선생님께 전송 기능이 꺼져 있어요)';
+    else if (!ME) m.textContent = Q.length ? '반·번호를 저장하면 기록이 전달돼요.' : '';
+    else m.textContent = Q.length ? '전송 대기 ' + Q.length + '건 (인터넷이 연결되면 자동 전송)' : '선생님께 전달됨 ✔';
+  }
+  function flushQ() {
+    if (!API || !ME || flushing || !Q.length) { syncMsg(); return; }
+    flushing = true; syncMsg();
+    const it = Q[0];
+    const p = { action: it.op, cls: ME.cls, num: ME.num };
+    if (it.op === 'add') p.rec = it.rec; else p.id = it.id;
+    fetch(API + '?d=' + encodeURIComponent(JSON.stringify(p)), { method: 'GET' })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        flushing = false;
+        if (j && j.ok) { Q.shift(); saveQ(); flushQ(); } else { syncMsg(); }
+      })
+      .catch(function () { flushing = false; syncMsg(); setTimeout(flushQ, 15000); });
+  }
+  function renderMe() {
+    if (!$('me-form')) return;
+    $('me-form').hidden = !!ME; $('me-view').hidden = !ME;
+    if (ME) $('me-txt').textContent = ME.cls + '반 ' + ME.num + '번';
+    syncMsg();
+  }
+  if ($('me-save')) {
+    $('me-save').addEventListener('click', function () {
+      const c = parseInt($('me-cls').value, 10), n = parseInt($('me-num').value, 10);
+      if (!(c >= 1 && c <= 30 && n >= 1 && n <= 50)) { window.alert('반(1~30)과 번호(1~50)를 숫자로 입력해 주세요.'); return; }
+      ME = { cls: c, num: n }; try { localStorage.setItem(ME_KEY, JSON.stringify(ME)); } catch (e) { /* 무시 */ }
+      /* 이 기기에 이미 있던 기록도 한 번 보내기(중복은 서버에서 id로 걸러냄) */
+      if (API) { const queued = Q.filter(function (x) { return x.op === 'add'; }).map(function (x) { return x.rec.id; }); LOG.forEach(function (r) { if (queued.indexOf(r.id) < 0) Q.push({ op: 'add', rec: r }); }); saveQ(); }
+      renderMe(); flushQ();
+    });
+    $('me-edit').addEventListener('click', function () { ME = null; try { localStorage.removeItem(ME_KEY); } catch (e) { /* 무시 */ } $('me-form').hidden = false; $('me-view').hidden = true; });
+    window.addEventListener('online', flushQ);
+    setTimeout(function () { renderMe(); flushQ(); }, 0);
+  }
 
   /* ---------- 고해상도 캔버스 ---------- */
   function hd(cv, w, h) {
@@ -370,7 +419,7 @@
     const a = e.target.getAttribute('data-an'), f = e.target.getAttribute('data-fl');
     if (a !== null) {
       const i = +a, tb = s.tubes[i], eth = C.ethVolPct(tb.nE, tb.nW);
-      if (!D.ui[i].an) { D.ui[i].an = true; addLog({ exp: 'C', tube: i + 1, vol: +f1(C.volOf(tb.nE, tb.nW)), eth: Math.round(eth), avgT: tb.steps ? +f1(tb.Tsum / tb.steps) : null, E: D.init.mlE, W: D.init.mlW }); }
+      if (!D.ui[i].an) { D.ui[i].an = true; addLog({ exp: 'C', tube: i + 1, vol: +f1(C.volOf(tb.nE, tb.nW)), eth: Math.round(eth), avgT: tb.steps ? +f1(tb.Tsum / tb.steps) : null, E: D.init.mlE, W: D.init.mlW, pw: D.still.power, ch: D.init.chips ? 1 : 0, co: D.still.cooling ? 1 : 0, au: D.still.autoVol }); }
       D.uiKey = null; cTubesUI(true);
     }
     if (f !== null) {
@@ -448,8 +497,8 @@
     $('ai-table-' + flt).innerHTML = rows.length ? h : '<p class="hint">아직 기록된 데이터가 없어요. 위 실험에서 [기록]을 눌러 보세요.</p>';
   }
   ['A', 'B', 'C'].forEach(function (exp) {
-    $('ai-table-' + exp).addEventListener('click', function (e) { const d = e.target.getAttribute('data-del'); if (d) { LOG = LOG.filter(function (r) { return String(r.id) !== d; }); saveLog(); renderAI(); } });
-    $('ai-clear-' + exp).addEventListener('click', function () { if (window.confirm('이 실험의 기록을 모두 지울까요?')) { LOG = LOG.filter(function (r) { return r.exp !== exp; }); saveLog(); renderAI(); } });
+    $('ai-table-' + exp).addEventListener('click', function (e) { const d = e.target.getAttribute('data-del'); if (d) { delLog(d); } });
+    $('ai-clear-' + exp).addEventListener('click', function () { if (window.confirm('이 실험의 기록을 모두 지울까요?')) { delLog(LOG.filter(function (r) { return r.exp === exp; }).map(function (r) { return String(r.id); })); } });
   });
 
   /* ---- 회귀 ---- */

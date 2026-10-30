@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>교사용 · 혼합물 분리 결과 모아보기 | 수민T의 과학 실험실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="style.css?v=8">
+<style>
+.tbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tbar .grow{flex:1}
+.stat{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.stat div{flex:1 1 130px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--surface2)}
+.stat b{display:block;font-size:1.5rem}
+.legend{font-size:.9rem;margin:6px 0}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 4px 0 10px;vertical-align:middle}
+.gate{max-width:420px;margin:40px auto}
+.sec h2{margin:0 0 4px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:820px){.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body data-tab="a">
+<div class="top"><h1>👩‍🏫 혼합물 분리 · 우리 반 결과 모아보기</h1></div>
+
+<div class="wrap" id="gate">
+  <div class="card gate">
+    <h2>교사용 페이지</h2>
+    <p>비밀번호를 입력하세요.</p>
+    <input id="pw" type="password" inputmode="numeric" placeholder="비밀번호" autocomplete="off" style="width:100%">
+    <p><button id="go" class="btn">들어가기</button></p>
+    <p class="hint" id="gmsg"></p>
+  </div>
+</div>
+
+<div class="wrap" id="main" hidden>
+  <div class="card">
+    <div class="tbar">
+      <b>반</b> <select id="cls"></select>
+      <button id="reload" class="btn small">🔄 새로고침</button>
+      <span class="hint grow" id="upd"></span>
+    </div>
+    <div class="stat" id="stat"></div>
+    <p class="hint" id="demo-note" hidden>※ 예시 데이터입니다. 학생들의 실제 기록이 아니에요.</p>
+  </div>
+
+  <div class="card sec" id="sec-a">
+    <h2>① 용해도 차 — 질산 칼륨 + 황산 구리(Ⅱ)</h2>
+    <p class="hint">학생들이 기록한 점이 교과서 용해도 곡선 위에 얼마나 모이는지, 순수한 질산 칼륨만 얻은 조건은 무엇인지 볼 수 있어요.</p>
+    <div class="legend" id="lg-a"></div>
+    <canvas id="g-a1" class="gcanvas"></canvas>
+    <div class="two" style="margin-top:12px">
+      <div><canvas id="g-a2" class="gcanvas"></canvas></div>
+      <div><canvas id="g-a3" class="gcanvas"></canvas></div>
+    </div>
+    <p id="msg-a" class="explain"></p>
+  </div>
+
+  <div class="card sec" id="sec-c">
+    <h2>② 끓는점 차 — 물 + 에탄올 증류</h2>
+    <p class="hint">시험관 번호마다 모인 액체의 에탄올 부피 %. 점 하나가 학생 한 명의 시험관 하나이고, 선은 평균이에요.</p>
+    <div class="legend" id="lg-c"></div>
+    <canvas id="g-c1" class="gcanvas"></canvas>
+    <div id="tb-c"></div>
+    <p id="msg-c" class="explain"></p>
+  </div>
+
+  <div class="card sec" id="sec-b">
+    <h2>③ 녹는점 차 — 스테아르산 + 물</h2>
+    <p class="hint">물 온도별로 스테아르산이 녹았는지(막대), 학생마다 찾아낸 '녹는 경계 온도'는 어디인지 볼 수 있어요.</p>
+    <canvas id="g-b1" class="gcanvas"></canvas>
+    <div class="two" style="margin-top:12px">
+      <div><canvas id="g-b2" class="gcanvas"></canvas></div>
+      <div id="tb-b"></div>
+    </div>
+    <p id="msg-b" class="explain"></p>
+  </div>
+</div>
+
+<footer class="foot">중학교 2학년 과학 · 혼합물의 분리 (Ⅰ. 물질의 특성)<br>©수민T의 과학 실험실. All rights reserved.</footer>
+
+<script src="config.js?v=8"></script>
+<script src="core.js?v=8"></script>
+<script src="teacher.js?v=8"></script>
+</body>
+</html>

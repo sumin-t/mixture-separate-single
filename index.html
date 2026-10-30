@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>혼합물 분리 가상 실험실 | 수민T의 과학 실험실</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=8">
 </head>
 <body data-tab="a">
 <div class="top">
@@ -15,6 +15,22 @@
     <button class="tab" data-tab="c" role="tab">② 끓는점 차</button>
     <button class="tab" data-tab="b" role="tab">③ 녹는점 차</button>
   </nav>
+</div>
+
+<div class="wrap">
+  <div class="card me" id="me-card">
+    <div id="me-form">
+      <b>내 정보</b>
+      <input id="me-cls" type="number" inputmode="numeric" min="1" max="30" placeholder="반" aria-label="반"> 반
+      <input id="me-num" type="number" inputmode="numeric" min="1" max="50" placeholder="번호" aria-label="번호"> 번
+      <button id="me-save" class="btn small">저장</button>
+      <span class="hint">이름은 받지 않아요. 기록하면 선생님께 자동으로 전달돼요.</span>
+    </div>
+    <div id="me-view" hidden>
+      ✅ <b id="me-txt"></b> <button id="me-edit" class="btn small ghost">바꾸기</button>
+      <span id="me-sync" class="hint"></span>
+    </div>
+  </div>
 </div>
 
 <main class="wrap">
@@ -299,7 +315,8 @@
 
 <footer class="foot">중학교 2학년 과학 · 혼합물의 분리 (Ⅰ. 물질의 특성)<br>©수민T의 과학 실험실. All rights reserved.</footer>
 
-<script src="core.js?v=7"></script>
-<script src="app.js?v=7"></script>
+<script src="config.js?v=8"></script>
+<script src="core.js?v=8"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>
