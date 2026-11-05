@@ -110,7 +110,7 @@
     $('a-bathlabel').textContent = (A.stage >= 1 && v.T < 40) ? '얼음물 수조' : '가열 중 (40 ℃)';
     // 용액 색
     const dissCu = A.stage >= 1 ? r.dissCu : 0;
-    $('a-liquid').setAttribute('fill', A.stage >= 1 ? 'rgba(30,120,230,' + (0.08 + 0.55 * dissCu / 25).toFixed(2) + ')' : 'rgba(150,190,240,.12)');
+    $('a-liquid').setAttribute('fill', A.stage >= 1 ? 'rgba(30,120,230,' + (0.08 + 0.55 * dissCu / 14).toFixed(2) + ')' : 'rgba(150,190,240,.12)');
     // 바닥의 결정(거시)
     const g = $('a-crystals'); while (g.firstChild) g.removeChild(g.firstChild);
     const pK = A.stage >= 1 ? r.precK : v.k, pC = A.stage >= 1 ? r.precCu : v.cu;
@@ -125,7 +125,7 @@
       $('a-residue').setAttribute('y', 102 - rh + 14); $('a-residue').setAttribute('height', rh);
       const fb = tot > 0 ? r.precCu / tot : 0;
       $('a-residue').setAttribute('fill', 'rgb(' + Math.round(255 - 150 * fb) + ',' + Math.round(255 - 90 * fb) + ',255)');
-      $('a-filtrate').setAttribute('fill', 'rgba(30,120,230,' + (0.08 + 0.55 * r.dissCu / 25).toFixed(2) + ')');
+      $('a-filtrate').setAttribute('fill', 'rgba(30,120,230,' + (0.08 + 0.55 * r.dissCu / 14).toFixed(2) + ')');
     }
     // 표
     let t = '<table><tr><th>물질</th><th>40 ℃에서<br>녹아 있던 양(g)</th><th>' + v.T + ' ℃, 물 100 g에<br>녹을 수 있는 양(g)</th><th>석출량(g)</th></tr>';
@@ -225,7 +225,7 @@
     if (!$('a-pm').checked) { ctx.fillStyle = '#789'; ctx.font = '14px sans-serif'; ctx.fillText('입자 모형 보기를 켜 보세요', 130, 130); return; }
     const v = aVals(), r = aCalc();
     // 액체 영역
-    ctx.fillStyle = A.stage >= 1 ? 'rgba(30,120,230,' + (0.06 + 0.3 * r.dissCu / 25).toFixed(2) + ')' : 'rgba(150,190,240,.10)';
+    ctx.fillStyle = A.stage >= 1 ? 'rgba(30,120,230,' + (0.06 + 0.3 * r.dissCu / 14).toFixed(2) + ')' : 'rgba(150,190,240,.10)';
     ctx.fillRect(10, 10, W - 20, H - 20);
     ctx.strokeStyle = '#789'; ctx.strokeRect(10, 10, W - 20, H - 20);
     const nK = A.stage >= 1 ? Math.round(r.dissK) : 0, nC = A.stage >= 1 ? Math.round(r.dissCu) : 0;

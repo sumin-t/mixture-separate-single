@@ -43,7 +43,7 @@
       for (let num = 1; num <= n; num++) {
         const base = { cls: cls, num: num, id: 'd' + (id++) };
         for (let k = 0; k < 3; k++) {
-          const inK = [20, 25, 30, 35, 40][Math.floor(rnd() * 5)], inCu = [0, 1, 5, 10, 20, 25][Math.floor(rnd() * 6)], T = [10, 15, 20, 25, 30, 35][Math.floor(rnd() * 6)];
+          const inK = [20, 25, 30, 35, 40][Math.floor(rnd() * 5)], inCu = [1, 5, 10, 14][Math.floor(rnd() * 4)], T = [10, 15, 20, 25, 30, 35][Math.floor(rnd() * 6)];
           const a = C.calcA(inK, inCu, T);
           out.push(Object.assign({}, base, { id: 'a' + (id++), exp: 'A', inK: inK, inCu: inCu, T: T, sK: +a.sK.toFixed(1), sCu: +a.sCu.toFixed(1), precK: +a.precK.toFixed(1), precCu: +a.precCu.toFixed(1) }));
         }
@@ -144,13 +144,13 @@
     a = axes(ctx, W, H, { x0: 5, x1: 40, y0: 0, y1: 40, xt: [10, 15, 20, 25, 30, 35, 40], yt: [0, 10, 20, 30, 40], xn: '온도(℃)', yn: '질산 칼륨 석출량(g)' });
     rows.forEach(function (r) { dot(ctx, a.X(r.T) + jit(Math.round(r.inK * 7 + r.inCu), 8), a.Y(Math.min(40, r.precK)), colorOf(r, mode), 4.5); });
     if (!rows.length) empty(ctx, W, H);
-    /* 3) 황산 구리 넣은 양 vs 황산 구리 석출량 */
+    /* 3) 질산 칼륨 넣은 양 vs 석출량 */
     ctx = hd($('g-a3'), W, H);
-    a = axes(ctx, W, H, { x0: 0, x1: 25, y0: 0, y1: 25, xt: [0, 5, 10, 15, 20, 25], yt: [0, 5, 10, 15, 20, 25], xn: '황산 구리 넣은 양(g)', yn: '황산 구리 석출량(g)' });
-    rows.forEach(function (r) { dot(ctx, a.X(r.inCu) + jit(Math.round(r.T * 3 + r.inK), 8), a.Y(Math.min(25, r.precCu)), r.precCu > 0 ? '#c0392b' : '#2e9d6a', 4.5); });
+    a = axes(ctx, W, H, { x0: 5, x1: 65, y0: 0, y1: 60, xt: [10, 20, 30, 40, 50, 60], yt: [0, 10, 20, 30, 40, 50, 60], xn: '질산 칼륨 넣은 양(g)', yn: '질산 칼륨 석출량(g)' });
+    rows.forEach(function (r) { dot(ctx, a.X(r.inK) + jit(Math.round(r.T * 3 + r.inCu), 8), a.Y(Math.min(60, r.precK)), colorOf(r, mode), 4.5); });
     if (!rows.length) empty(ctx, W, H);
     const pure = rows.filter(function (r) { return r.precK > 0 && r.precCu === 0; }).length, kp = rows.filter(function (r) { return r.precK > 0; }).length;
-    $('msg-a').innerHTML = rows.length ? '질산 칼륨 결정이 생긴 기록 <b>' + kp + '건</b> 중 푸른 황산 구리 결정이 섞이지 않은 기록은 <b>' + pure + '건(' + pct(pure, kp) + ')</b>이에요. 오른쪽 아래 그래프에서 <span style="color:#2e9d6a;font-weight:700">초록 점</span>은 황산 구리가 석출되지 않은 경우, <span style="color:#c0392b;font-weight:700">빨간 점</span>은 푸른 결정이 섞인 경우예요. 황산 구리를 많이 넣고 너무 낮은 온도까지 식히면 빨간 점이 나타나요.' : '아직 이 실험의 기록이 없어요.';
+    $('msg-a').innerHTML = rows.length ? '질산 칼륨 결정이 생긴 기록은 <b>' + kp + '건</b>이고, 그중 푸른 황산 구리 결정이 섞이지 않은 기록은 <b>' + pure + '건(' + pct(pure, kp) + ')</b>이에요. 황산 구리는 1~14 g만 넣을 수 있어서(0 ℃ 용해도 14.3 g 미만) 보통 푸른 결정은 섞이지 않아요. 오른쪽 그래프는 질산 칼륨을 많이 넣을수록, 그리고 더 낮은 온도까지 식힐수록 석출량이 늘어나는 모습을 보여 줘요.' : '아직 이 실험의 기록이 없어요.';
   }
 
   function drawC() {
