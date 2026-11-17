@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>혼합물 분리 가상 실험실 | 수민T의 과학 실험실</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="style.css?v=9">
 </head>
 <body data-tab="a">
 <div class="top">
@@ -89,13 +89,13 @@
       </div>
       <div class="step">
         <h3>② 냉각하기</h3>
-        <p>얼음물 수조에서 온도를 낮춘다. 슬라이더로 직접 조절하거나 자동 냉각을 눌러 본다.</p>
-        <label>용액의 온도 <b id="a-tv">40</b> ℃<input type="range" id="a-temp" min="0" max="40" step="1" value="40" disabled></label>
-        <button id="a-auto" class="btn ghost" disabled>자동 냉각 (40→0 ℃)</button>
+        <p>얼음물 수조에서 낮출 목표 온도를 설정한 뒤 [냉각하기]를 누른다.</p>
+        <label>목표 온도 <b id="a-tv">40</b> ℃<input type="range" id="a-temp" min="0" max="40" step="1" value="40" disabled></label>
+        <button id="a-cool" class="btn" disabled>냉각하기</button>
       </div>
       <div class="step">
         <h3>③ 거르기</h3>
-        <p>거름 장치로 석출된 고체를 거른다. 거름종이와 거른 용액의 색을 관찰한다.</p>
+        <p>냉각 후 거름 장치로 석출된 고체를 거른다. 거름종이와 거른 용액의 색을 관찰한다.</p>
         <button id="a-filter" class="btn" disabled>거름 장치로 거르기</button>
         <button id="a-record" class="btn ghost" disabled>📋 이 결과를 데이터로 기록</button>
         <button id="a-reset" class="btn ghost">처음부터</button>
@@ -243,18 +243,29 @@
       <h2>실험 장치</h2>
       <svg id="b-svg" viewBox="0 0 420 320" class="scene" role="img" aria-label="비커와 시험관">
         <rect x="0" y="0" width="420" height="320" fill="#f7fbff" rx="12"/>
+        <!-- 비커 -->
         <path d="M110 80 L110 270 Q110 284 124 284 L250 284 Q264 284 264 270 L264 80" fill="none" stroke="#456" stroke-width="3"/>
         <rect id="b-water" x="112" y="130" width="150" height="152" fill="rgba(110,170,240,.35)"/>
         <rect id="b-oil" x="112" y="130" width="150" height="0" fill="rgba(255,235,150,.8)"/>
         <g id="b-flakes"></g>
         <text id="b-temp" x="187" y="104" text-anchor="middle" font-size="16" font-weight="700" fill="#c62828">물 75 ℃</text>
-        <!-- 시험관 -->
-        <g id="b-tube" style="transition:transform 1.2s ease; transform:translateY(-70px)">
-          <path d="M300 60 L300 190 Q300 206 316 206 Q332 206 332 190 L332 60" fill="rgba(180,215,255,.55)" stroke="#456" stroke-width="3"/>
-          <rect id="b-film" x="301" y="160" width="30" height="0" fill="#fff" stroke="#ddd" rx="6"/>
+        <!-- 시험관 (초기 위치: 비커 오른쪽 위 대기) -->
+        <g id="b-tube" style="transition:transform 0.85s cubic-bezier(0.25, 0.8, 0.25, 1); transform:translate(129px, -35px)">
+          <!-- 시험관 속 찬물 -->
+          <path d="M173 95 L173 190 Q173 204 187 204 Q201 204 201 190 L201 95 Z" fill="rgba(130,195,255,.55)"/>
+          <!-- 시험관 표면에 응고된 스테아르산 고체 막 -->
+          <g id="b-film" style="opacity:0; transition:opacity 0.4s ease">
+            <path d="M168 112 L168 190 Q168 209 187 209 Q206 209 206 190 L206 112" fill="none" stroke="#ffffff" stroke-width="6.5" stroke-linecap="round"/>
+            <path d="M168 112 L168 190 Q168 209 187 209 Q206 209 206 190 L206 112" fill="none" stroke="#c5bfb0" stroke-width="1.2" stroke-dasharray="4,2"/>
+            <!-- 불규칙하게 굳은 고체 덩어리 표현 -->
+            <ellipse cx="169" cy="145" rx="3.2" ry="9" fill="#fffdf7" stroke="#cbc5b6" stroke-width="0.9"/>
+            <ellipse cx="205" cy="158" rx="3.2" ry="11" fill="#fffdf7" stroke="#cbc5b6" stroke-width="0.9"/>
+            <ellipse cx="187" cy="207" rx="11" ry="3.2" fill="#fffdf7" stroke="#cbc5b6" stroke-width="0.9"/>
           </g>
-        <text x="316" y="22" text-anchor="middle" font-size="12" fill="#2a6fb0" id="b-tubelabel">시험관 물 5 ℃</text>
-        <path d="M110 40 L134 40" stroke="none"/>
+          <!-- 시험관 유리 외벽 -->
+          <path d="M171 60 L171 190 Q171 206 187 206 Q203 206 203 190 L203 60" fill="none" stroke="#456" stroke-width="3"/>
+        </g>
+        <text x="316" y="20" text-anchor="middle" font-size="12" font-weight="600" fill="#2a6fb0" id="b-tubelabel">시험관 물 5 ℃</text>
       </svg>
     </div>
     <div class="card">
@@ -309,14 +320,12 @@
   </div>
 </section>
 
-
-
 </main>
 
 <footer class="foot">중학교 2학년 과학 · 혼합물의 분리 (Ⅰ. 물질의 특성)<br>©수민T의 과학 실험실. All rights reserved.</footer>
 
-<script src="config.js?v=8"></script>
-<script src="core.js?v=8"></script>
-<script src="app.js?v=8"></script>
+<script src="config.js?v=9"></script>
+<script src="core.js?v=9"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>

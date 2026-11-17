@@ -87,30 +87,35 @@
   /* =========================================================
      ① 용해도 차
      ========================================================= */
-  const A = { stage: 0, reveal: false, filtered: false, auto: null };
+  const A = { stage: 0, temp: 40, cooled: false, reveal: false, filtered: false };
   const dotsK = [], dotsC = [];
   (function seed() {
     for (let i = 0; i < 60; i++) dotsK.push({ x: 30 + Math.random() * 360, y: 20 + Math.random() * 190, vx: (Math.random() - .5) * 1.6, vy: (Math.random() - .5) * 1.6 });
     for (let i = 0; i < 26; i++) dotsC.push({ x: 30 + Math.random() * 360, y: 20 + Math.random() * 190, vx: (Math.random() - .5) * 1.6, vy: (Math.random() - .5) * 1.6 });
   })();
 
-  function aVals() { return { k: +$('a-k').value, cu: +$('a-cu').value, T: A.stage >= 1 ? +$('a-temp').value : 40 }; }
+  function aVals() { return { k: +$('a-k').value, cu: +$('a-cu').value, T: A.stage >= 1 ? A.temp : 40 }; }
   function aCalc() { const v = aVals(); return C.calcA(v.k, v.cu, v.T); }
 
   function aRender() {
     const v = aVals(), r = aCalc();
-    $('a-kv').textContent = v.k; $('a-cv').textContent = v.cu; $('a-tv').textContent = v.T;
-    // 온도계, 수조
+    $('a-kv').textContent = v.k;
+    $('a-cv').textContent = v.cu;
+    $('a-tv').textContent = $('a-temp').value;
+
+    // 온도계, 수조 (실제 냉각된 온도 A.temp 기준)
     $('a-tempnum').textContent = (A.stage ? v.T : 40) + ' ℃';
     const h = 20 + (A.stage ? v.T : 40) * 2.2;
     $('a-mercury').setAttribute('y', 178 - h); $('a-mercury').setAttribute('height', h);
     const warm = (A.stage ? v.T : 40) / 40;
     const mix = function (a, b) { return Math.round(a * warm + b * (1 - warm)); };
     $('a-bath').setAttribute('fill', 'rgb(' + mix(255, 200) + ',' + mix(217, 232) + ',' + mix(199, 255) + ')');
-    $('a-bathlabel').textContent = (A.stage >= 1 && v.T < 40) ? '얼음물 수조' : '가열 중 (40 ℃)';
+    $('a-bathlabel').textContent = (A.stage >= 1 && A.cooled) ? '얼음물 수조 (' + v.T + ' ℃)' : '가열 중 (40 ℃)';
+
     // 용액 색
     const dissCu = A.stage >= 1 ? r.dissCu : 0;
     $('a-liquid').setAttribute('fill', A.stage >= 1 ? 'rgba(30,120,230,' + (0.08 + 0.55 * dissCu / 14).toFixed(2) + ')' : 'rgba(150,190,240,.12)');
+
     // 바닥의 결정(거시)
     const g = $('a-crystals'); while (g.firstChild) g.removeChild(g.firstChild);
     const pK = A.stage >= 1 ? r.precK : v.k, pC = A.stage >= 1 ? r.precCu : v.cu;
@@ -118,6 +123,7 @@
     const hK = Math.min(60, pK * 1.4), hC = Math.min(40, pC * 1.4);
     if (hK > 0.5) { el('rect', { x: 100, y: yy - hK, width: 90, height: hK, fill: '#fff', stroke: '#9aa', 'stroke-width': 1.5, rx: 3 }, g); yy -= hK; }
     if (hC > 0.5) { el('rect', { x: 106, y: yy - hC, width: 78, height: hC, fill: '#3b8cf0', stroke: '#1e5fb5', 'stroke-width': 1.5, rx: 3 }, g); }
+
     // 거름 장치
     $('a-filterbox').style.display = A.filtered ? 'block' : 'none';
     if (A.filtered) {
@@ -127,6 +133,7 @@
       $('a-residue').setAttribute('fill', 'rgb(' + Math.round(255 - 150 * fb) + ',' + Math.round(255 - 90 * fb) + ',255)');
       $('a-filtrate').setAttribute('fill', 'rgba(30,120,230,' + (0.08 + 0.55 * r.dissCu / 14).toFixed(2) + ')');
     }
+
     // 표
     let t = '<table><tr><th>물질</th><th>40 ℃에서<br>녹아 있던 양(g)</th><th>' + v.T + ' ℃, 물 100 g에<br>녹을 수 있는 양(g)</th><th>석출량(g)</th></tr>';
     t += '<tr><td>질산 칼륨</td><td>' + v.k + '</td><td>' + f1(r.sK) + '</td><td>' + (A.reveal ? f1(r.precK) : '?') + '</td></tr>';
@@ -151,13 +158,16 @@
 
   function aMessage(r, v) {
     const m = $('a-msg'); m.className = 'msg'; let s = '';
-    if (A.stage === 0) s = '먼저 혼합물의 양을 정하고 [물에 넣고 저어 녹이기]를 눌러 보세요.';
-    else {
-      s = '용액의 온도: ' + v.T + ' ℃. ';
+    if (A.stage === 0) {
+      s = '먼저 혼합물의 양을 정하고 [물에 넣고 저어 녹이기]를 눌러 보세요.';
+    } else if (!A.cooled) {
+      s = '40 ℃ 물에 혼합물이 모두 녹았습니다. 목표 온도를 설정한 뒤 <b>[냉각하기]</b> 버튼을 눌러 주세요.';
+    } else {
+      s = '냉각 후 용액의 온도: ' + v.T + ' ℃. ';
       if (v.cu > 0) s += '용액이 <b>푸른색</b>인 것은 황산 구리(Ⅱ)가 녹아 있기 때문입니다. ';
       if (r.precK > 0) {
         s += '<b>흰색 결정(질산 칼륨)</b>이 석출되고 있어요. ' + (r.satK != null && isFinite(r.satK) ? '(처음 결정이 생기는 온도는 약 ' + Math.round(r.satK) + ' ℃)' : '');
-      } else s += '아직 석출되는 고체가 없어요. 온도를 더 낮춰 보세요.';
+      } else s += '아직 석출되는 고체가 없어요. 온도를 더 낮춰서 냉각해 보세요.';
       if (r.precCu > 0) { s += '<br>⚠ <b>푸른색 결정(황산 구리(Ⅱ))도 함께 석출</b>되었어요! 황산 구리(Ⅱ)가 너무 많으면 질산 칼륨만 따로 분리할 수 없습니다. (재결정은 불순물이 적을 때 알맞은 방법)'; m.className = 'msg warn'; }
     }
     m.innerHTML = s;
@@ -166,29 +176,56 @@
   $('a-k').addEventListener('input', aSettingsChanged);
   $('a-cu').addEventListener('input', aSettingsChanged);
   function aSettingsChanged() { if (A.stage >= 1) { aReset(true); } aRender(); }
+
   function aReset(keep) {
-    if (A.auto) { clearInterval(A.auto); A.auto = null; }
-    A.stage = 0; A.reveal = false; A.filtered = false;
-    $('a-temp').value = 40; $('a-temp').disabled = true; $('a-auto').disabled = true; $('a-filter').disabled = true; $('a-record').disabled = true;
+    A.stage = 0; A.temp = 40; A.cooled = false; A.reveal = false; A.filtered = false;
+    $('a-temp').value = 40; $('a-temp').disabled = true;
+    $('a-cool').disabled = true;
+    $('a-filter').disabled = true;
+    $('a-record').disabled = true;
     $('a-fb').textContent = ''; $('a-ans').value = '';
     if (!keep) { $('a-k').value = 30; $('a-cu').value = 1; }
   }
+
   $('a-reset').addEventListener('click', function () { aReset(false); aRender(); });
+
   $('a-dissolve').addEventListener('click', function () {
-    A.stage = 1; A.filtered = false; A.reveal = false; $('a-temp').value = 40;
-    $('a-temp').disabled = false; $('a-auto').disabled = false; $('a-filter').disabled = false; $('a-record').disabled = false;
+    A.stage = 1; A.temp = 40; A.cooled = false; A.filtered = false; A.reveal = false;
+    $('a-temp').value = 40;
+    $('a-temp').disabled = false;
+    $('a-cool').disabled = false;
+    $('a-filter').disabled = true;
+    $('a-record').disabled = true;
     aRender();
   });
-  $('a-temp').addEventListener('input', function () { A.reveal = false; A.filtered = false; $('a-fb').textContent = ''; aRender(); });
-  $('a-auto').addEventListener('click', function () {
-    if (A.auto) return;
-    $('a-temp').value = 40; A.filtered = false; A.reveal = false;
-    A.auto = setInterval(function () {
-      const t = +$('a-temp').value - 1; $('a-temp').value = Math.max(0, t); aRender();
-      if (t <= 0) { clearInterval(A.auto); A.auto = null; }
-    }, 140);
+
+  // 슬라이더 조작 시 목표 온도만 변경되고 [냉각하기]를 눌러야 냉각 진행
+  $('a-temp').addEventListener('input', function () {
+    A.cooled = false;
+    A.reveal = false;
+    A.filtered = false;
+    $('a-filter').disabled = true;
+    $('a-record').disabled = true;
+    $('a-fb').textContent = '';
+    $('a-tv').textContent = $('a-temp').value;
+    $('a-msg').className = 'msg';
+    $('a-msg').innerHTML = '목표 온도를 <b>' + $('a-temp').value + ' ℃</b>로 설정했습니다. <b>[냉각하기]</b> 버튼을 눌러 용액을 냉각하세요.';
   });
+
+  // [냉각하기] 클릭 시 실제 온도 반영 및 거르기 버튼 활성화
+  $('a-cool').addEventListener('click', function () {
+    A.temp = +$('a-temp').value;
+    A.cooled = true;
+    A.filtered = false;
+    A.reveal = false;
+    $('a-filter').disabled = false;
+    $('a-record').disabled = false;
+    $('a-fb').textContent = '';
+    aRender();
+  });
+
   $('a-filter').addEventListener('click', function () { A.filtered = true; aRender(); aFilterText(); });
+
   function aFilterText() {
     const r = aCalc(), m = $('a-msg');
     let s = '<b>거르기 결과</b><br>• 거름종이 위: ';
@@ -201,6 +238,7 @@
     s += '<br>• 거른 용액(' + (r.dissCu > 0 ? '<b>푸른색</b>' : '무색') + '): 질산 칼륨 ' + f1(r.dissK) + ' g' + (r.dissCu > 0 ? ' + 황산 구리(Ⅱ) ' + f1(r.dissCu) + ' g' : '') + '이 녹아 있음';
     m.className = 'msg ' + (r.precCu > 0 ? 'warn' : 'ok'); m.innerHTML = s;
   }
+
   $('a-check').addEventListener('click', function () {
     const r = aCalc(), ans = parseFloat($('a-ans').value);
     A.reveal = true;
@@ -210,6 +248,7 @@
     else fb.innerHTML = '❌ 다시 생각해 보세요. <b>석출량 = 처음 녹아 있던 양 − 냉각한 온도에서 최대로 녹을 수 있는 양</b> (녹을 수 있는 양보다 적게 녹아 있으면 석출되지 않아요.)';
     aRender();
   });
+
   $('a-record').addEventListener('click', function () {
     const r = aCalc();
     addLog({ exp: 'A', inK: r.inK, inCu: r.inCu, T: r.T, sK: +f1(r.sK), sCu: +f1(r.sCu), precK: +f1(r.precK), precCu: +f1(r.precCu) });
@@ -224,7 +263,6 @@
     ctx.clearRect(0, 0, W, H);
     if (!$('a-pm').checked) { ctx.fillStyle = '#789'; ctx.font = '14px sans-serif'; ctx.fillText('입자 모형 보기를 켜 보세요', 130, 130); return; }
     const v = aVals(), r = aCalc();
-    // 액체 영역
     ctx.fillStyle = A.stage >= 1 ? 'rgba(30,120,230,' + (0.06 + 0.3 * r.dissCu / 14).toFixed(2) + ')' : 'rgba(150,190,240,.10)';
     ctx.fillRect(10, 10, W - 20, H - 20);
     ctx.strokeStyle = '#789'; ctx.strokeRect(10, 10, W - 20, H - 20);
@@ -240,7 +278,6 @@
     for (let i = 0; i < Math.min(nK, dotsK.length); i++) { const d = dotsK[i]; mv(d); ctx.beginPath(); ctx.arc(d.x, d.y, 6, 0, 6.283); ctx.fill(); ctx.stroke(); }
     ctx.fillStyle = '#1e78e6'; ctx.strokeStyle = '#0d47a1';
     for (let i = 0; i < Math.min(nC, dotsC.length); i++) { const d = dotsC[i]; mv(d); ctx.beginPath(); ctx.arc(d.x, d.y, 6, 0, 6.283); ctx.fill(); ctx.stroke(); }
-    // 바닥에 쌓인 결정(규칙적으로 배열)
     const cols = 24; let idx = 0;
     const place = function (n, fill, stroke) {
       ctx.fillStyle = fill; ctx.strokeStyle = stroke;
@@ -259,6 +296,10 @@
      ③ 녹는점 차 (스테아르산)
      ========================================================= */
   const B = { mixed: false, dipped: false, melted: false, film: false };
+  const TUBE_REST = 'translate(129px, -35px)';   // 비커 오른쪽 위 대기 위치
+  const TUBE_OVER = 'translate(0px, -35px)';     // 비커 중앙 위 이동 위치
+  const TUBE_IN   = 'translate(0px, 42px)';      // 비커 속 물/스테아르산 층에 잠긴 위치
+
   function bSafetyOK() {
     const ppe = Array.prototype.every.call(document.querySelectorAll('.ppe'), function (c) { return c.checked; });
     const bad = Array.prototype.some.call(document.querySelectorAll('.unsafe'), function (c) { return c.checked; });
@@ -273,7 +314,7 @@
       if (B.melted) { $('b-oil').setAttribute('y', 114); $('b-oil').setAttribute('height', 16); }
       else for (let i = 0; i < 38; i++) el('ellipse', { cx: 120 + Math.random() * 134, cy: 124 + Math.random() * 6, rx: 4 + Math.random() * 2, ry: 2.4, fill: '#fffdf5', stroke: '#b9b09a', 'stroke-width': .8 }, fl);
     }
-    $('b-film').setAttribute('y', 108); $('b-film').setAttribute('height', B.film ? 30 : 0);
+    $('b-film').style.opacity = B.film ? '1' : '0';
     bAI();
   }
   function bAI() {
@@ -287,11 +328,12 @@
     box.innerHTML = s;
   }
   function bMsg(s, cls) { const m = $('b-msg'); m.className = 'msg ' + (cls || ''); m.innerHTML = s; }
-  $('b-T').addEventListener('input', function () { B.mixed = false; B.dipped = false; B.film = false; $('b-dip').disabled = true; $('b-record').disabled = true; $('b-tube').style.transform = 'translateY(-130px)'; bRender(); bMsg(''); });
-  $('b-tubeT').addEventListener('change', function () { B.dipped = false; B.film = false; $('b-record').disabled = true; bRender(); });
+  $('b-T').addEventListener('input', function () { B.mixed = false; B.dipped = false; B.film = false; $('b-dip').disabled = true; $('b-record').disabled = true; $('b-tube').style.transform = TUBE_REST; bRender(); bMsg(''); });
+  $('b-tubeT').addEventListener('change', function () { B.dipped = false; B.film = false; $('b-record').disabled = true; $('b-tube').style.transform = TUBE_REST; bRender(); });
   $('b-mix').addEventListener('click', function () {
     if (!bSafetyOK()) { bMsg('⚠ 안전 점검을 다시 확인하세요. 뜨거운 물을 다룰 때는 보안경·내열장갑·실험복을 착용하고, 맨손으로 뜨거운 비커를 잡으면 안 됩니다.', 'warn'); return; }
     const T = +$('b-T').value; B.mixed = true; B.dipped = false; B.film = false; B.melted = T >= C.STEARIC_MP;
+    $('b-tube').style.transform = TUBE_REST;
     $('b-dip').disabled = false; $('b-record').disabled = true; bRender();
     bMsg(B.melted
       ? '스테아르산 0.5 g이 <b>녹아서 물 위에 뜹니다</b>(액체 상태). 물과 잘 섞이지 않고 물보다 밀도가 작아 위에 떠 있어요.'
@@ -299,24 +341,45 @@
   });
   $('b-dip').addEventListener('click', function () {
     const tubeT = +$('b-tubeT').value, tube = $('b-tube');
-    $('b-dip').disabled = true; tube.style.transform = 'translateY(0px)';
+    $('b-dip').disabled = true;
+    $('b-mix').disabled = true;
+    B.film = false;
+    bRender();
+
+    // 1단계: 비커 위 중앙으로 이동
+    tube.style.transform = TUBE_OVER;
+
+    // 2단계: 비커 속 물과 스테아르산 층에 담그기
+    setTimeout(function () {
+      tube.style.transform = TUBE_IN;
+    }, 650);
+
+    // 3단계: 담근 상태에서 응고 여부 반영 후 비커 위로 꺼내기
     setTimeout(function () {
       B.dipped = true;
       B.film = B.melted && tubeT < C.STEARIC_MP;
-      tube.style.transform = 'translateY(-130px)'; bRender();
+      bRender();
+      tube.style.transform = TUBE_OVER;
+    }, 1650);
+
+    // 4단계: 원래 관찰 위치로 복귀 및 결과 메시지 표시
+    setTimeout(function () {
+      tube.style.transform = TUBE_REST;
+      $('b-mix').disabled = false;
+      $('b-dip').disabled = false;
       if (!B.mixed) return;
       if (B.film) bMsg('시험관 표면에 <b>흰색 고체(스테아르산)</b>가 붙었어요! 녹아 있던 스테아르산이 찬 시험관에 닿아 <b>응고</b>했기 때문입니다. 물은 응고하지 않고 그대로예요 → 녹는점(어는점)이 높은 스테아르산이 먼저 굳어 분리됩니다.', 'ok');
       else if (!B.melted) bMsg('시험관에 붙는 것이 거의 없어요. 스테아르산이 아직 녹지 않은 고체 알갱이라서 <b>응고 과정</b>이 일어나지 않았어요. 물 온도를 69 ℃ 이상으로 높여 보세요.', 'warn');
       else bMsg('시험관이 뜨거워서(' + tubeT + ' ℃) 스테아르산이 굳지 않고 <b>액체 상태로 흘러내려요</b>. 스테아르산이 응고하려면 녹는점(약 69 ℃)보다 낮은 온도의 표면이 필요해요.', 'warn');
-      $('b-record').disabled = false; $('b-dip').disabled = false;
-    }, 1400);
+      $('b-record').disabled = false;
+    }, 2400);
   });
   $('b-record').addEventListener('click', function () {
     addLog({ exp: 'B', T: +$('b-T').value, tubeT: +$('b-tubeT').value, melted: B.melted ? 1 : 0, film: B.film ? 1 : 0 });
     bMsg('📋 기록했어요! 물 온도를 바꿔 가며 더 기록하면 AI가 결과를 예측하고, 아래 AI 분석에서 녹는 온도의 경계를 학습해요.', 'ok');
     bAI();
   });
-  $('b-tube').style.transform = 'translateY(-130px)';
+  $('b-tube').style.transform = TUBE_REST;
   bRender();
 
   /* =========================================================
@@ -327,7 +390,7 @@
     return { mlE: +$('c-e').value, mlW: +$('c-w').value, power: +$('c-power').value, chips: $('c-chip').checked, cooling: $('c-cool').checked, autoVol: +$('c-auto').value };
   }
   function cInfo() {
-    const o = cRead(), nE = o.mlE * C.RHO_E / C.M_E, nW = o.mlW * C.RHO_W / C.M_W;
+    const o = cRead();
     $('c-ev').textContent = o.mlE; $('c-wv').textContent = o.mlW;
     $('c-info').innerHTML = '혼합물: 에탄올 ' + o.mlE + ' mL + 물 ' + o.mlW + ' mL (에탄올 약 ' + Math.round(100 * o.mlE / (o.mlE + o.mlW)) + ' %). 물의 끓는점은 100 ℃, 에탄올의 끓는점은 약 78 ℃예요.';
   }
@@ -382,7 +445,6 @@
     $('c-chips').style.display = (s ? s.chips : $('c-chip').checked) ? 'block' : 'none';
     $('c-heat').setAttribute('fill', D.timer ? '#ff7043' : '#444');
     $('c-jacket').setAttribute('opacity', (s ? s.cooling : $('c-cool').checked) ? 0.55 : 0);
-    // 시험관 걸이
     while (rack.firstChild) rack.removeChild(rack.firstChild);
     const tubes = s ? s.tubes : [{ nE: 0, nW: 0 }];
     tubes.forEach(function (tb, i) {
@@ -466,7 +528,7 @@
   function renderMini() {
     const cv = $('a-mini'), rows = rowsOf('A'), ctx = hd(cv, 640, 300);
     const a = axes(ctx, 640, 300, 66, 622, 16, 254, 0, 60, 0, 120, '온도(℃)', '용해도(g/물 100 g)');
-    rows.forEach(function (r, i) { drawPt(ctx, a, r.T, r.sK); });
+    rows.forEach(function (r) { drawPt(ctx, a, r.T, r.sK); });
     if (rows.length) { const l = rows[rows.length - 1]; ctx.strokeStyle = '#ef6c00'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(a.X(l.T), a.Y(l.sK), 10, 0, 6.283); ctx.stroke(); }
     $('a-minimsg').textContent = rows.length ? '기록한 점 ' + rows.length + '개 (주황 동그라미 = 방금 기록한 점). 점이 2개 이상이면 아래 AI 분석에서 AI가 곡선을 그려요.' : '기록하면 여기에 점이 찍혀요. (가로: 온도, 세로: 질산 칼륨이 물 100 g에 녹을 수 있는 양)';
   }
@@ -483,15 +545,6 @@
     } else if (flt === 'C') {
       h += '<tr><th>#</th><th>시험관</th><th>에탄올/물(mL)</th><th>부피(mL)</th><th>에탄올(부피 %)</th><th>평균 온도(℃)</th><th></th></tr>';
       rows.forEach(function (r, i) { h += '<tr><td>' + (i + 1) + '</td><td>' + r.tube + '</td><td>' + r.E + '/' + r.W + '</td><td>' + r.vol + '</td><td>' + r.eth + '</td><td>' + (r.avgT == null ? '-' : r.avgT) + '</td><td><button class="btn small ghost" data-del="' + r.id + '">✖</button></td></tr>'; });
-    } else {
-      h += '<tr><th>#</th><th>실험</th><th>조건</th><th>결과</th><th></th></tr>';
-      rows.forEach(function (r, i) {
-        let cond, res, nm;
-        if (r.exp === 'A') { nm = '① 용해도 차'; cond = '질산 칼륨 ' + r.inK + ' g, 황산 구리 ' + r.inCu + ' g, ' + r.T + ' ℃'; res = '질산 칼륨 석출 ' + r.precK + ' g, 황산 구리 석출 ' + r.precCu + ' g'; }
-        else if (r.exp === 'B') { nm = '③ 녹는점 차'; cond = '물 ' + r.T + ' ℃, 시험관 ' + r.tubeT + ' ℃'; res = (r.melted ? '녹음' : '녹지 않음') + ' / ' + (r.film ? '시험관에 고체가 붙음' : '붙지 않음'); }
-        else { nm = '② 끓는점 차'; cond = '에탄올 ' + r.E + ' mL + 물 ' + r.W + ' mL, 시험관 ' + r.tube; res = '에탄올 ' + r.eth + ' % (' + r.vol + ' mL)'; }
-        h += '<tr><td>' + (i + 1) + '</td><td>' + nm + '</td><td>' + cond + '</td><td>' + res + '</td><td><button class="btn small ghost" data-del="' + r.id + '">✖</button></td></tr>';
-      });
     }
     h += '</table>';
     $('ai-table-' + flt).innerHTML = rows.length ? h : '<p class="hint">아직 기록된 데이터가 없어요. 위 실험에서 [기록]을 눌러 보세요.</p>';
@@ -633,7 +686,7 @@
     }
     if (v !== null) {
       const c = CASES[+v], box = document.querySelector('#case' + v + ' .vbox');
-      box.innerHTML = '<div class="msg ok"><b>교과서 확인:</b> ' + c.tb + '<br><b>생각해 보기:</b> ' + c.verify + '' + '</div>';
+      box.innerHTML = '<div class="msg ok"><b>교과서 확인:</b> ' + c.tb + '<br><b>생각해 보기:</b> ' + c.verify + '</div>';
     }
   }
 
